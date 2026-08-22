@@ -1,133 +1,446 @@
 <!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | Choyo_Web</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-logo-title-footer"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Choyo_Web</div>
-      </div>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
+  <title>Choyo_Web</title>
+  <style>
+    :root {
+      --panel-bg: rgba(18, 18, 22, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.14);
+      --text: #f2f2f5;
+      --muted: #a0a0ab;
+      --accent: #6c8cff;
+      --ok: #4ec98a;
+      --warn: #e5b769;
+      --err: #e57373;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #101014; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+           "Malgun Gothic", "Noto Sans KR", sans-serif; color: var(--text); }
+
+    #unity-container { position: absolute; inset: 0; }
+    #unity-canvas { width: 100%; height: 100%; display: block; background: #101014; }
+
+    #unity-loading-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+                         display: none; text-align: center; }
+    #unity-progress-bar-empty { width: 240px; height: 6px; border-radius: 3px;
+                                background: rgba(255,255,255,0.12); overflow: hidden; }
+    #unity-progress-bar-full { width: 0%; height: 100%; background: var(--accent); transition: width .15s; }
+    #unity-loading-text { margin-bottom: 10px; font-size: 13px; color: var(--muted); }
+
+    #unity-warning { position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
+                     z-index: 30; display: none; }
+    #unity-warning div { padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+
+    /* ---------------- 페이셜 트래킹 패널 ---------------- */
+    #facial-panel {
+      position: absolute; left: 16px; bottom: 16px; z-index: 20;
+      width: 268px; padding: 14px;
+      background: var(--panel-bg); border: 1px solid var(--panel-border);
+      border-radius: 12px; backdrop-filter: blur(12px);
+      font-size: 13px; line-height: 1.5;
+    }
+    #facial-panel.collapsed > .facial-body { display: none; }
+    .facial-head { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .facial-title { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
+    .facial-toggle { color: var(--muted); font-size: 16px; line-height: 1; user-select: none; }
+    .facial-body { margin-top: 12px; }
+
+    .facial-btn {
+      width: 100%; padding: 9px 12px; margin-bottom: 8px;
+      border: 1px solid var(--panel-border); border-radius: 8px;
+      background: rgba(255,255,255,0.06); color: var(--text);
+      font: inherit; font-weight: 500; cursor: pointer; transition: background .15s;
+    }
+    .facial-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
+    .facial-btn:disabled { opacity: .45; cursor: default; }
+    .facial-btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
+    .facial-btn.primary:hover:not(:disabled) { background: #7d9aff; }
+
+    #facial-status { color: var(--muted); font-size: 12px; min-height: 2.6em; }
+    #facial-status.ok   { color: var(--ok); }
+    #facial-status.warn { color: var(--warn); }
+    #facial-status.err  { color: var(--err); }
+
+    #facial-preview {
+      width: 100%; border-radius: 8px; margin-top: 10px; display: none;
+      transform: scaleX(-1); background: #000;
+    }
+
+    .facial-adv { margin-top: 10px; border-top: 1px solid var(--panel-border); padding-top: 10px; }
+    .facial-adv summary { cursor: pointer; color: var(--muted); font-size: 12px; outline: none; }
+    .facial-adv input[type=text] {
+      width: 100%; margin-top: 8px; padding: 7px 9px;
+      background: rgba(0,0,0,0.35); border: 1px solid var(--panel-border);
+      border-radius: 6px; color: var(--text); font: inherit; font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="unity-container">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+  </div>
+
+  <div id="unity-loading-bar">
+    <div id="unity-loading-text">불러오는 중…</div>
+    <div id="unity-progress-bar-empty"><div id="unity-progress-bar-full"></div></div>
+  </div>
+
+  <div id="unity-warning"></div>
+
+  <div id="facial-panel" class="collapsed">
+    <div class="facial-head" id="facial-head">
+      <span class="facial-title">페이셜 트래킹</span>
+      <span class="facial-toggle" id="facial-toggle">＋</span>
     </div>
-    <script>
-      var canvas = document.querySelector("#unity-canvas");
+    <div class="facial-body">
+      <button class="facial-btn primary" id="facial-start">카메라로 표정 따라하기</button>
+      <button class="facial-btn" id="facial-stop" disabled>중지</button>
+      <div id="facial-status">카메라를 켜면 얼굴 표정이 캐릭터에 반영됩니다.</div>
+      <video id="facial-preview" autoplay playsinline muted></video>
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
+      <details class="facial-adv">
+        <summary>고급 · iFacialMocap 브릿지</summary>
+        <input type="text" id="facial-ws-url" value="ws://localhost:8081" spellcheck="false">
+        <button class="facial-btn" id="facial-ws-connect" style="margin-top:8px;">WebSocket 연결</button>
+      </details>
+    </div>
+  </div>
+
+  <script>
+  // =====================================================================
+  //  UGULFacial — 페이셜 데이터를 Unity로 전달하는 공용 계층
+  //
+  //  Unity(C#)의 DirectIFacialMocapReceiver 가 Start() 에서 자기
+  //  GameObject 이름을 등록하면(FacialBridge.jslib) ready=true 가 되고,
+  //  그때부터 send() 가 실제로 SendMessage 를 호출한다.
+  //
+  //  전달 포맷(iFacialMocap과 동일):
+  //    name-value|name-value|...=head#rx,ry,rz,px,py,pz
+  //    · value 는 0~100 (음수 금지: 파서가 '-' 로 토큰을 나눔)
+  //    · head 섹션은 값이 6개 이상이어야 한다
+  // =====================================================================
+  (function () {
+    var api = (window.UGULFacial = window.UGULFacial || {});
+    api.ready = false;
+    api.targetObject = null;
+    api.unityInstance = null;
+    api._pending = null;
+
+    api.send = function (payload) {
+      if (!api.ready || !api.unityInstance || !api.targetObject) {
+        api._pending = payload;   // 아직 준비 전이면 최신 것 하나만 보관
+        return false;
       }
+      try {
+        api.unityInstance.SendMessage(api.targetObject, 'ReceiveFacialData', payload);
+        return true;
+      } catch (e) {
+        console.warn('[UGULFacial] SendMessage 실패', e);
+        return false;
+      }
+    };
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/unity.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/unity.data.unityweb",
-        frameworkUrl: buildUrl + "/unity.framework.js.unityweb",
-        codeUrl: buildUrl + "/unity.wasm.unityweb",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "UGUL",
-        productName: "Choyo_Web",
-        productVersion: "1.0.6",
-        showBanner: unityShowBanner,
-        // errorHandler: function(err, url, line) {
-        //    alert("error " + err + " occurred at line " + line);
-        //    // Return 'true' if you handled this error and don't want Unity
-        //    // to process it further, 'false' otherwise.
-        //    return true;
-        // },
-      };
+    api.notifyStopped = function () {
+      if (!api.ready || !api.unityInstance || !api.targetObject) return;
+      try {
+        api.unityInstance.SendMessage(api.targetObject, 'OnFacialSourceStopped', '');
+      } catch (e) { /* noop */ }
+    };
 
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
+    // jslib 이 등록 시점에 호출한다.
+    api._flush = function () {
+      if (api._pending) { api.send(api._pending); api._pending = null; }
+    };
 
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
+    // 부모 페이지(iframe 임베드)에서 데이터를 밀어넣는 경로.
+    window.addEventListener('message', function (ev) {
+      var d = ev.data;
+      if (!d || d.type !== 'ugul-facial') return;
+      if (typeof d.payload === 'string') api.send(d.payload);
+    });
+  })();
+  </script>
 
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
+  <script>
+  // ---------------------- Unity 로더 ----------------------
+  (function () {
+    var canvas = document.querySelector('#unity-canvas');
+    var warningBanner = document.querySelector('#unity-warning');
 
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        canvas.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
+    function unityShowBanner(msg, type) {
+      function updateVisibility() {
+        warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+      }
+      var div = document.createElement('div');
+      div.innerHTML = msg;
+      warningBanner.appendChild(div);
+      if (type === 'error') {
+        div.style.cssText = 'background:#e57373;color:#fff;';
       } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+        if (type === 'warning') div.style.cssText = 'background:#e5b769;color:#111;';
+        setTimeout(function () { warningBanner.removeChild(div); updateVisibility(); }, 5000);
+      }
+      updateVisibility();
+    }
+
+    var buildUrl = 'Build';
+    var config = {
+      arguments: [],
+      dataUrl: buildUrl + '/unity.data.unityweb',
+      frameworkUrl: buildUrl + '/unity.framework.js.unityweb',
+      codeUrl: buildUrl + '/unity.wasm.unityweb',
+      streamingAssetsUrl: 'StreamingAssets',
+      companyName: "UGUL",
+      productName: "Choyo_Web",
+      productVersion: "1.0.6",
+      showBanner: unityShowBanner,
+      autoSyncPersistentDataPath: true
+    };
+
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      var meta = document.createElement('meta');
+      meta.name = 'viewport';
+      meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+      document.getElementsByTagName('head')[0].appendChild(meta);
+    }
+
+    document.querySelector('#unity-loading-bar').style.display = 'block';
+
+    var script = document.createElement('script');
+    script.src = buildUrl + '/unity.loader.js';
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) {
+        document.querySelector('#unity-progress-bar-full').style.width = 100 * progress + '%';
+      }).then(function (unityInstance) {
+        document.querySelector('#unity-loading-bar').style.display = 'none';
+        window.unityInstance = unityInstance;
+        window.UGULFacial.unityInstance = unityInstance;
+        window.UGULFacial._flush();
+      }).catch(function (message) {
+        unityShowBanner(message, 'error');
+      });
+    };
+    document.body.appendChild(script);
+  })();
+  </script>
+
+  <script type="module">
+  // =====================================================================
+  //  MediaPipe Face Landmarker → iFacialMocap 포맷 변환
+  //
+  //  MediaPipe 는 Apple ARKit 규격의 52개 블렌드셰이프를 그대로 내보낸다.
+  //  (eyeBlinkLeft, jawOpen, browInnerUp …) — iFacialMocap 과 이름이 같아
+  //  Unity 쪽 매핑을 손댈 필요가 없다.
+  // =====================================================================
+  const MP_VERSION = '0.10.22';
+  const MODEL_URL  =
+    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+  // 헤드 회전 부호. 캐릭터가 반대로 돌면 해당 값을 -1 로 바꾸면 된다.
+  // C# 쪽에서 이미 Y, Z 를 한 번 뒤집으므로 여기서 미리 상쇄해 둔다.
+  const HEAD_SIGN = { x: 1, y: -1, z: -1 };
+  const SEND_HZ = 30;
+
+  const els = {
+    panel:   document.getElementById('facial-panel'),
+    head:    document.getElementById('facial-head'),
+    toggle:  document.getElementById('facial-toggle'),
+    start:   document.getElementById('facial-start'),
+    stop:    document.getElementById('facial-stop'),
+    status:  document.getElementById('facial-status'),
+    preview: document.getElementById('facial-preview'),
+    wsUrl:   document.getElementById('facial-ws-url'),
+    wsBtn:   document.getElementById('facial-ws-connect'),
+  };
+
+  function setStatus(text, kind) {
+    els.status.textContent = text;
+    els.status.className = kind || '';
+  }
+
+  els.head.addEventListener('click', () => {
+    const collapsed = els.panel.classList.toggle('collapsed');
+    els.toggle.textContent = collapsed ? '＋' : '－';
+  });
+
+  // ------------------------------------------------ 포맷 변환
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+  function buildPayload(blendshapes, matrix) {
+    const parts = [];
+    for (const c of blendshapes) {
+      if (c.categoryName === '_neutral') continue;
+      // 0~1 → 0~100, 음수 금지(파서가 '-' 로 토큰을 자름)
+      const v = Math.round(clamp(c.score, 0, 1) * 100);
+      parts.push(c.categoryName + '-' + v);
+    }
+
+    let head = 'head#0,0,0,0,0,0';
+    if (matrix && matrix.length >= 16) {
+      const m = matrix;
+      // 열 우선(column-major) → 행 우선 성분
+      const r00 = m[0],  r10 = m[1],  r20 = m[2];
+      const r01 = m[4],  r11 = m[5],  r21 = m[6];
+      const r02 = m[8],  r12 = m[9],  r22 = m[10];
+
+      // Unity 오일러 순서(ZXY) 분해
+      const x = Math.asin(clamp(-r12, -1, 1));
+      let y, z;
+      if (Math.abs(r12) < 0.9999) {
+        y = Math.atan2(r02, r22);
+        z = Math.atan2(r10, r11);
+      } else {
+        y = Math.atan2(-r20, r00);
+        z = 0;
+      }
+      const D = 180 / Math.PI;
+      const rx = (x * D * HEAD_SIGN.x).toFixed(3);
+      const ry = (y * D * HEAD_SIGN.y).toFixed(3);
+      const rz = (z * D * HEAD_SIGN.z).toFixed(3);
+      head = `head#${rx},${ry},${rz},0,0,0`;
+    }
+
+    return parts.join('|') + '=' + head;
+  }
+
+  // ------------------------------------------------ 웹캠 트래킹
+  let landmarker = null;
+  let stream = null;
+  let rafId = null;
+  let lastVideoTime = -1;
+  let lastSent = 0;
+
+  async function ensureLandmarker() {
+    if (landmarker) return landmarker;
+    setStatus('트래킹 모델을 불러오는 중… (최초 1회, 약 4MB)');
+    const { FaceLandmarker, FilesetResolver } =
+      await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/vision_bundle.mjs`);
+    const fileset = await FilesetResolver.forVisionTasks(
+      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/wasm`
+    );
+    landmarker = await FaceLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+      outputFaceBlendshapes: true,
+      outputFacialTransformationMatrixes: true,
+      runningMode: 'VIDEO',
+      numFaces: 1,
+    });
+    return landmarker;
+  }
+
+  function loop() {
+    rafId = requestAnimationFrame(loop);
+    const video = els.preview;
+    if (!landmarker || video.readyState < 2) return;
+    if (video.currentTime === lastVideoTime) return;
+    lastVideoTime = video.currentTime;
+
+    const now = performance.now();
+    if (now - lastSent < 1000 / SEND_HZ) return;
+    lastSent = now;
+
+    let res;
+    try {
+      res = landmarker.detectForVideo(video, now);
+    } catch (e) {
+      return;
+    }
+    if (!res || !res.faceBlendshapes || !res.faceBlendshapes.length) return;
+
+    const shapes = res.faceBlendshapes[0].categories;
+    const mtx = res.facialTransformationMatrixes && res.facialTransformationMatrixes.length
+      ? res.facialTransformationMatrixes[0].data : null;
+
+    window.UGULFacial.send(buildPayload(shapes, mtx));
+  }
+
+  async function startCamera() {
+    els.start.disabled = true;
+    try {
+      if (!window.isSecureContext) {
+        throw new Error('보안 연결(HTTPS)에서만 카메라를 쓸 수 있습니다.');
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('이 브라우저는 카메라 API를 지원하지 않습니다.');
       }
 
-      document.querySelector("#unity-loading-bar").style.display = "block";
+      await ensureLandmarker();
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                document.querySelector("#unity-loading-bar").style.display = "none";
-                document.querySelector("#unity-fullscreen-button").onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
+      setStatus('카메라 권한을 요청하는 중…');
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' },
+        audio: false,
+      });
+      els.preview.srcObject = stream;
+      els.preview.style.display = 'block';
+      await els.preview.play();
 
-              }).catch((message) => {
-                alert(message);
-              });
-            };
+      els.stop.disabled = false;
+      setStatus('트래킹 중입니다. 얼굴이 잘 보이도록 조명을 밝게 해주세요.', 'ok');
+      loop();
+    } catch (err) {
+      els.start.disabled = false;
+      let msg = err && err.message ? err.message : String(err);
+      if (err && err.name === 'NotAllowedError') {
+        msg = '카메라 사용이 거부되었습니다. 주소창의 카메라 아이콘에서 허용해주세요.';
+      } else if (err && err.name === 'NotFoundError') {
+        msg = '사용 가능한 카메라를 찾지 못했습니다.';
+      }
+      setStatus(msg, 'err');
+      console.error('[UGULFacial]', err);
+    }
+  }
 
-      document.body.appendChild(script);
+  function stopCamera() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    els.preview.srcObject = null;
+    els.preview.style.display = 'none';
+    els.start.disabled = false;
+    els.stop.disabled = true;
+    lastVideoTime = -1;
+    window.UGULFacial.notifyStopped();
+    setStatus('중지했습니다.');
+  }
 
-    </script>
-  </body>
+  els.start.addEventListener('click', startCamera);
+  els.stop.addEventListener('click', stopCamera);
+
+  // ------------------------------------------------ WebSocket 브릿지 (iFacialMocap)
+  let ws = null;
+  els.wsBtn.addEventListener('click', () => {
+    if (ws) { ws.close(); ws = null; return; }
+    const url = els.wsUrl.value.trim();
+    if (!url) return;
+    setStatus('브릿지에 연결하는 중…');
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      setStatus('WebSocket 주소가 올바르지 않습니다.', 'err');
+      return;
+    }
+    ws.onopen = () => {
+      els.wsBtn.textContent = 'WebSocket 끊기';
+      setStatus('iFacialMocap 브릿지에 연결되었습니다.', 'ok');
+    };
+    ws.onmessage = (ev) => { window.UGULFacial.send(ev.data); };
+    ws.onerror = () => {
+      setStatus('브릿지에 연결하지 못했습니다. 브릿지 프로그램이 켜져 있는지 확인하세요.', 'err');
+    };
+    ws.onclose = () => {
+      ws = null;
+      els.wsBtn.textContent = 'WebSocket 연결';
+      window.UGULFacial.notifyStopped();
+    };
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (ws) ws.close();
+  });
+  </script>
+</body>
 </html>
