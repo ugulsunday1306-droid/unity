@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
-  <title>Choyo_Web</title>
+  <title>{{{ PRODUCT_NAME }}}</title>
   <style>
     :root {
       --panel-bg: rgba(18, 18, 22, 0.82);
@@ -69,26 +69,6 @@
       transform: scaleX(-1); background: #000;
     }
 
-    .facial-tabs { display:flex; gap:6px; margin-bottom:10px; }
-    .facial-tab {
-      flex:1; padding:6px 8px; font:inherit; font-size:12px; cursor:pointer;
-      border:1px solid var(--panel-border); border-radius:7px;
-      background:rgba(255,255,255,0.04); color:var(--muted);
-    }
-    .facial-tab.active { background:rgba(108,140,255,0.18); border-color:var(--accent); color:var(--text); }
-    .facial-pane[hidden] { display:none; }
-    .facial-steps { margin:0 0 10px; padding-left:18px; color:var(--muted); font-size:12px; line-height:1.65; }
-    .facial-steps code {
-      background:rgba(0,0,0,0.4); padding:1px 5px; border-radius:4px;
-      font-size:11px; color:var(--text); user-select:all;
-    }
-    #bridge-state {
-      display:flex; align-items:center; gap:7px; margin-bottom:9px;
-      font-size:12px; color:var(--muted);
-    }
-    #bridge-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex:none; }
-    #bridge-dot.on   { background:var(--ok); box-shadow:0 0 7px var(--ok); }
-    #bridge-dot.off  { background:var(--err); }
     .facial-adv { margin-top: 10px; border-top: 1px solid var(--panel-border); padding-top: 10px; }
     .facial-adv summary { cursor: pointer; color: var(--muted); font-size: 12px; outline: none; }
     .facial-adv input[type=text] {
@@ -116,29 +96,16 @@
       <span class="facial-toggle" id="facial-toggle">＋</span>
     </div>
     <div class="facial-body">
-      <div class="facial-tabs">
-        <button class="facial-tab active" data-mode="webcam">웹캠</button>
-        <button class="facial-tab" data-mode="iphone">아이폰 (고화질)</button>
-      </div>
-
-      <div class="facial-pane" id="pane-webcam">
-        <button class="facial-btn primary" id="facial-start">카메라로 표정 따라하기</button>
-        <button class="facial-btn" id="facial-stop" disabled>중지</button>
-        <video id="facial-preview" autoplay playsinline muted></video>
-      </div>
-
-      <div class="facial-pane" id="pane-iphone" hidden>
-        <div id="bridge-state"><span id="bridge-dot"></span><span id="bridge-text">브릿지를 찾는 중…</span></div>
-        <ol class="facial-steps">
-          <li>PC에서 브릿지 프로그램을 실행합니다.</li>
-          <li>아이폰 <b>iFacialMocap</b> 앱을 켭니다. (PC와 같은 와이파이)</li>
-          <li>앱에 표시된 IP를 브릿지에 알려줍니다.<br><code>--iphone 192.168.0.30</code></li>
-        </ol>
-        <input type="text" id="facial-ws-url" value="ws://127.0.0.1:8081" spellcheck="false">
-        <button class="facial-btn" id="facial-ws-connect" style="margin-top:8px;">연결</button>
-      </div>
-
+      <button class="facial-btn primary" id="facial-start">카메라로 표정 따라하기</button>
+      <button class="facial-btn" id="facial-stop" disabled>중지</button>
       <div id="facial-status">카메라를 켜면 얼굴 표정이 캐릭터에 반영됩니다.</div>
+      <video id="facial-preview" autoplay playsinline muted></video>
+
+      <details class="facial-adv">
+        <summary>고급 · iFacialMocap 브릿지</summary>
+        <input type="text" id="facial-ws-url" value="ws://localhost:8081" spellcheck="false">
+        <button class="facial-btn" id="facial-ws-connect" style="margin-top:8px;">WebSocket 연결</button>
+      </details>
     </div>
   </div>
 
@@ -222,13 +189,19 @@
     var buildUrl = 'Build';
     var config = {
       arguments: [],
-      dataUrl: buildUrl + '/unity.data.unityweb',
-      frameworkUrl: buildUrl + '/unity.framework.js.unityweb',
-      codeUrl: buildUrl + '/unity.wasm.unityweb',
+      dataUrl: buildUrl + '/{{{ DATA_FILENAME }}}',
+      frameworkUrl: buildUrl + '/{{{ FRAMEWORK_FILENAME }}}',
+      codeUrl: buildUrl + '/{{{ CODE_FILENAME }}}',
+#if MEMORY_FILENAME
+      memoryUrl: buildUrl + '/{{{ MEMORY_FILENAME }}}',
+#endif
+#if SYMBOLS_FILENAME
+      symbolsUrl: buildUrl + '/{{{ SYMBOLS_FILENAME }}}',
+#endif
       streamingAssetsUrl: 'StreamingAssets',
-      companyName: "UGUL",
-      productName: "Choyo_Web",
-      productVersion: "1.0.6",
+      companyName: "{{{ COMPANY_NAME }}}",
+      productName: "{{{ PRODUCT_NAME }}}",
+      productVersion: "{{{ PRODUCT_VERSION }}}",
       showBanner: unityShowBanner,
       autoSyncPersistentDataPath: true
     };
@@ -243,7 +216,7 @@
     document.querySelector('#unity-loading-bar').style.display = 'block';
 
     var script = document.createElement('script');
-    script.src = buildUrl + '/unity.loader.js';
+    script.src = buildUrl + '/{{{ LOADER_FILENAME }}}';
     script.onload = function () {
       createUnityInstance(canvas, config, function (progress) {
         document.querySelector('#unity-progress-bar-full').style.width = 100 * progress + '%';
@@ -268,19 +241,14 @@
   //  (eyeBlinkLeft, jawOpen, browInnerUp …) — iFacialMocap 과 이름이 같아
   //  Unity 쪽 매핑을 손댈 필요가 없다.
   // =====================================================================
-  // @mediapipe/tasks-vision 최신 안정판.
-  // 0.10.x 대에는 정식 배포 없이 rc 태그만 있어서 CDN 이 404 를 낸다.
-  const MP_VERSION = '1.0.1';
+  const MP_VERSION = '0.10.22';
   const MODEL_URL  =
-    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';
-
-  // 모바일(특히 아이폰)은 해상도와 전송률을 낮춰야 프레임이 유지된다.
-  const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
   // 헤드 회전 부호. 캐릭터가 반대로 돌면 해당 값을 -1 로 바꾸면 된다.
   // C# 쪽에서 이미 Y, Z 를 한 번 뒤집으므로 여기서 미리 상쇄해 둔다.
   const HEAD_SIGN = { x: 1, y: -1, z: -1 };
-  const SEND_HZ = IS_MOBILE ? 20 : 30;
+  const SEND_HZ = 30;
 
   const els = {
     panel:   document.getElementById('facial-panel'),
@@ -292,11 +260,6 @@
     preview: document.getElementById('facial-preview'),
     wsUrl:   document.getElementById('facial-ws-url'),
     wsBtn:   document.getElementById('facial-ws-connect'),
-    tabs:    Array.from(document.querySelectorAll('.facial-tab')),
-    paneCam: document.getElementById('pane-webcam'),
-    paneIph: document.getElementById('pane-iphone'),
-    bDot:    document.getElementById('bridge-dot'),
-    bText:   document.getElementById('bridge-text'),
   };
 
   function setStatus(text, kind) {
@@ -358,43 +321,19 @@
 
   async function ensureLandmarker() {
     if (landmarker) return landmarker;
-
-    const base = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}`;
-
-    setStatus('트래킹 모듈을 불러오는 중…');
-    let mod;
-    try {
-      mod = await import(`${base}/vision_bundle.mjs`);
-    } catch (e) {
-      throw new Error(
-        '트래킹 모듈을 내려받지 못했습니다. 네트워크 또는 광고 차단 확장 프로그램이 ' +
-        'cdn.jsdelivr.net 을 막고 있는지 확인해주세요.'
-      );
-    }
-
-    const { FaceLandmarker, FilesetResolver } = mod;
-    if (!FaceLandmarker || !FilesetResolver) {
-      throw new Error('트래킹 모듈 형식이 예상과 다릅니다. MP_VERSION 을 확인해주세요.');
-    }
-
-    setStatus('트래킹 모델을 준비하는 중… (최초 1회, 약 4MB)');
-    const fileset = await FilesetResolver.forVisionTasks(`${base}/wasm`);
-
-    // iOS 사파리 등 일부 환경은 GPU 델리게이트 생성에 실패한다. CPU 로 물러선다.
-    const opts = (delegate) => ({
-      baseOptions: { modelAssetPath: MODEL_URL, delegate },
+    setStatus('트래킹 모델을 불러오는 중… (최초 1회, 약 4MB)');
+    const { FaceLandmarker, FilesetResolver } =
+      await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/vision_bundle.mjs`);
+    const fileset = await FilesetResolver.forVisionTasks(
+      `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/wasm`
+    );
+    landmarker = await FaceLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
       outputFaceBlendshapes: true,
       outputFacialTransformationMatrixes: true,
       runningMode: 'VIDEO',
       numFaces: 1,
     });
-
-    try {
-      landmarker = await FaceLandmarker.createFromOptions(fileset, opts('GPU'));
-    } catch (e) {
-      console.warn('[UGULFacial] GPU 델리게이트 실패, CPU 로 재시도합니다.', e);
-      landmarker = await FaceLandmarker.createFromOptions(fileset, opts('CPU'));
-    }
     return landmarker;
   }
 
@@ -438,9 +377,7 @@
 
       setStatus('카메라 권한을 요청하는 중…');
       stream = await navigator.mediaDevices.getUserMedia({
-        video: IS_MOBILE
-          ? { width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 24 }, facingMode: 'user' }
-          : { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        video: { width: 640, height: 480, facingMode: 'user' },
         audio: false,
       });
       els.preview.srcObject = stream;
@@ -478,83 +415,33 @@
   els.start.addEventListener('click', startCamera);
   els.stop.addEventListener('click', stopCamera);
 
-  // ------------------------------------------------ 탭 전환
-  function selectMode(mode) {
-    els.tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
-    els.paneCam.hidden = (mode !== 'webcam');
-    els.paneIph.hidden = (mode !== 'iphone');
-  }
-  els.tabs.forEach(t => t.addEventListener('click', () => selectMode(t.dataset.mode)));
-
-  // ------------------------------------------------ 아이폰 브릿지 (iFacialMocap)
-  //
-  //  [아이폰 iFacialMocap] --UDP 49983--> [PC 브릿지] --WebSocket--> [이 페이지]
-  //
-  //  페이지가 HTTPS 여도 ws://127.0.0.1 은 브라우저가 허용한다.
-  //  루프백은 "신뢰할 수 있는 출처"라 혼합 콘텐츠 차단에서 면제되기 때문.
+  // ------------------------------------------------ WebSocket 브릿지 (iFacialMocap)
   let ws = null;
-  let wsWanted = false;      // 사용자가 연결을 원하는 상태인지
-  let retryTimer = null;
-
-  function setBridge(state, text) {
-    els.bDot.className = state;           // '' | 'on' | 'off'
-    els.bText.textContent = text;
-  }
-
-  function connectBridge(manual) {
-    if (ws) return;
+  els.wsBtn.addEventListener('click', () => {
+    if (ws) { ws.close(); ws = null; return; }
     const url = els.wsUrl.value.trim();
     if (!url) return;
-    let sock;
+    setStatus('브릿지에 연결하는 중…');
     try {
-      sock = new WebSocket(url);
+      ws = new WebSocket(url);
     } catch (e) {
-      if (manual) setStatus('주소 형식이 올바르지 않습니다.', 'err');
+      setStatus('WebSocket 주소가 올바르지 않습니다.', 'err');
       return;
     }
-    ws = sock;
-
-    sock.onopen = () => {
-      wsWanted = true;
-      els.wsBtn.textContent = '연결 끊기';
-      setBridge('on', '브릿지에 연결됨 — 아이폰 데이터를 기다리는 중');
-      setStatus('아이폰 iFacialMocap 신호를 받고 있습니다.', 'ok');
+    ws.onopen = () => {
+      els.wsBtn.textContent = 'WebSocket 끊기';
+      setStatus('iFacialMocap 브릿지에 연결되었습니다.', 'ok');
     };
-
-    let frames = 0;
-    sock.onmessage = (ev) => {
-      window.UGULFacial.send(ev.data);
-      if (++frames === 30) setBridge('on', '아이폰 트래킹 수신 중');
+    ws.onmessage = (ev) => { window.UGULFacial.send(ev.data); };
+    ws.onerror = () => {
+      setStatus('브릿지에 연결하지 못했습니다. 브릿지 프로그램이 켜져 있는지 확인하세요.', 'err');
     };
-
-    sock.onerror = () => { /* onclose 에서 함께 처리 */ };
-
-    sock.onclose = () => {
-      const wasOpen = (ws === sock && frames > 0);
+    ws.onclose = () => {
       ws = null;
-      els.wsBtn.textContent = '연결';
+      els.wsBtn.textContent = 'WebSocket 연결';
       window.UGULFacial.notifyStopped();
-      if (manual || wasOpen) {
-        setBridge('off', '브릿지 연결이 끊겼습니다');
-        setStatus('브릿지에 연결하지 못했습니다. PC에서 브릿지 프로그램이 실행 중인지 확인하세요.', 'warn');
-      } else {
-        setBridge('', '브릿지가 실행되고 있지 않습니다');
-      }
-      if (wsWanted) {          // 한 번이라도 붙었으면 자동 재연결
-        clearTimeout(retryTimer);
-        retryTimer = setTimeout(() => connectBridge(false), 2000);
-      }
     };
-  }
-
-  els.wsBtn.addEventListener('click', () => {
-    if (ws) { wsWanted = false; clearTimeout(retryTimer); ws.close(); return; }
-    connectBridge(true);
   });
-
-  // 페이지가 뜨면 조용히 한 번 찔러본다. 브릿지가 켜져 있으면 바로 잡힌다.
-  setBridge('', '브릿지를 찾는 중…');
-  setTimeout(() => connectBridge(false), 600);
 
   window.addEventListener('beforeunload', () => {
     if (stream) stream.getTracks().forEach(t => t.stop());
