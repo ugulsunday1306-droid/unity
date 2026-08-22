@@ -5,96 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
   <title>Choyo_Web</title>
   <style>
-    :root {
-      --panel-bg: rgba(18, 18, 22, 0.82);
-      --panel-border: rgba(255, 255, 255, 0.14);
-      --text: #f2f2f5;
-      --muted: #a0a0ab;
-      --accent: #6c8cff;
-      --ok: #4ec98a;
-      --warn: #e5b769;
-      --err: #e57373;
-    }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; height: 100%; background: #101014; overflow: hidden; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
-           "Malgun Gothic", "Noto Sans KR", sans-serif; color: var(--text); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+                   "Malgun Gothic", "Noto Sans KR", sans-serif;
+      color: #f2f2f5;
+    }
 
     #unity-container { position: absolute; inset: 0; }
     #unity-canvas { width: 100%; height: 100%; display: block; background: #101014; }
 
-    #unity-loading-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-                         display: none; text-align: center; }
-    #unity-progress-bar-empty { width: 240px; height: 6px; border-radius: 3px;
-                                background: rgba(255,255,255,0.12); overflow: hidden; }
-    #unity-progress-bar-full { width: 0%; height: 100%; background: var(--accent); transition: width .15s; }
-    #unity-loading-text { margin-bottom: 10px; font-size: 13px; color: var(--muted); }
-
-    #unity-warning { position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
-                     z-index: 30; display: none; }
-    #unity-warning div { padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
-
-    /* ---------------- 페이셜 트래킹 패널 ---------------- */
-    #facial-panel {
-      position: absolute; left: 16px; bottom: 16px; z-index: 20;
-      width: 268px; padding: 14px;
-      background: var(--panel-bg); border: 1px solid var(--panel-border);
-      border-radius: 12px; backdrop-filter: blur(12px);
-      font-size: 13px; line-height: 1.5;
+    #unity-loading-bar {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      display: none; text-align: center;
     }
-    #facial-panel.collapsed > .facial-body { display: none; }
-    .facial-head { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-    .facial-title { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
-    .facial-toggle { color: var(--muted); font-size: 16px; line-height: 1; user-select: none; }
-    .facial-body { margin-top: 12px; }
-
-    .facial-btn {
-      width: 100%; padding: 9px 12px; margin-bottom: 8px;
-      border: 1px solid var(--panel-border); border-radius: 8px;
-      background: rgba(255,255,255,0.06); color: var(--text);
-      font: inherit; font-weight: 500; cursor: pointer; transition: background .15s;
+    #unity-loading-text { margin-bottom: 10px; font-size: 13px; color: #a0a0ab; }
+    #unity-progress-bar-empty {
+      width: 240px; height: 6px; border-radius: 3px;
+      background: rgba(255,255,255,0.12); overflow: hidden;
     }
-    .facial-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
-    .facial-btn:disabled { opacity: .45; cursor: default; }
-    .facial-btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
-    .facial-btn.primary:hover:not(:disabled) { background: #7d9aff; }
-
-    #facial-status { color: var(--muted); font-size: 12px; min-height: 2.6em; }
-    #facial-status.ok   { color: var(--ok); }
-    #facial-status.warn { color: var(--warn); }
-    #facial-status.err  { color: var(--err); }
-
-    #facial-preview {
-      width: 100%; border-radius: 8px; margin-top: 10px; display: none;
-      transform: scaleX(-1); background: #000;
+    #unity-progress-bar-full {
+      width: 0%; height: 100%; background: #6c8cff; transition: width .15s;
     }
 
-    .facial-tabs { display:flex; gap:6px; margin-bottom:10px; }
-    .facial-tab {
-      flex:1; padding:6px 8px; font:inherit; font-size:12px; cursor:pointer;
-      border:1px solid var(--panel-border); border-radius:7px;
-      background:rgba(255,255,255,0.04); color:var(--muted);
+    #unity-warning {
+      position: absolute; left: 50%; top: 16px; transform: translateX(-50%);
+      z-index: 30; display: none;
     }
-    .facial-tab.active { background:rgba(108,140,255,0.18); border-color:var(--accent); color:var(--text); }
-    .facial-pane[hidden] { display:none; }
-    .facial-steps { margin:0 0 10px; padding-left:18px; color:var(--muted); font-size:12px; line-height:1.65; }
-    .facial-steps code {
-      background:rgba(0,0,0,0.4); padding:1px 5px; border-radius:4px;
-      font-size:11px; color:var(--text); user-select:all;
-    }
-    #bridge-state {
-      display:flex; align-items:center; gap:7px; margin-bottom:9px;
-      font-size:12px; color:var(--muted);
-    }
-    #bridge-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex:none; }
-    #bridge-dot.on   { background:var(--ok); box-shadow:0 0 7px var(--ok); }
-    #bridge-dot.off  { background:var(--err); }
-    .facial-adv { margin-top: 10px; border-top: 1px solid var(--panel-border); padding-top: 10px; }
-    .facial-adv summary { cursor: pointer; color: var(--muted); font-size: 12px; outline: none; }
-    .facial-adv input[type=text] {
-      width: 100%; margin-top: 8px; padding: 7px 9px;
-      background: rgba(0,0,0,0.35); border: 1px solid var(--panel-border);
-      border-radius: 6px; color: var(--text); font: inherit; font-size: 12px;
+    #unity-warning div {
+      padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; font-size: 13px;
     }
   </style>
 </head>
@@ -110,95 +50,7 @@
 
   <div id="unity-warning"></div>
 
-  <div id="facial-panel" class="collapsed">
-    <div class="facial-head" id="facial-head">
-      <span class="facial-title">페이셜 트래킹</span>
-      <span class="facial-toggle" id="facial-toggle">＋</span>
-    </div>
-    <div class="facial-body">
-      <div class="facial-tabs">
-        <button class="facial-tab active" data-mode="webcam">웹캠</button>
-        <button class="facial-tab" data-mode="iphone">아이폰 (고화질)</button>
-      </div>
-
-      <div class="facial-pane" id="pane-webcam">
-        <button class="facial-btn primary" id="facial-start">카메라로 표정 따라하기</button>
-        <button class="facial-btn" id="facial-stop" disabled>중지</button>
-        <video id="facial-preview" autoplay playsinline muted></video>
-      </div>
-
-      <div class="facial-pane" id="pane-iphone" hidden>
-        <div id="bridge-state"><span id="bridge-dot"></span><span id="bridge-text">브릿지를 찾는 중…</span></div>
-        <ol class="facial-steps">
-          <li>PC에서 브릿지 프로그램을 실행합니다.</li>
-          <li>아이폰 <b>iFacialMocap</b> 앱을 켭니다. (PC와 같은 와이파이)</li>
-          <li>앱에 표시된 IP를 브릿지에 알려줍니다.<br><code>--iphone 192.168.0.30</code></li>
-        </ol>
-        <input type="text" id="facial-ws-url" value="ws://127.0.0.1:8081" spellcheck="false">
-        <button class="facial-btn" id="facial-ws-connect" style="margin-top:8px;">연결</button>
-      </div>
-
-      <div id="facial-status">카메라를 켜면 얼굴 표정이 캐릭터에 반영됩니다.</div>
-    </div>
-  </div>
-
   <script>
-  // =====================================================================
-  //  UGULFacial — 페이셜 데이터를 Unity로 전달하는 공용 계층
-  //
-  //  Unity(C#)의 DirectIFacialMocapReceiver 가 Start() 에서 자기
-  //  GameObject 이름을 등록하면(FacialBridge.jslib) ready=true 가 되고,
-  //  그때부터 send() 가 실제로 SendMessage 를 호출한다.
-  //
-  //  전달 포맷(iFacialMocap과 동일):
-  //    name-value|name-value|...=head#rx,ry,rz,px,py,pz
-  //    · value 는 0~100 (음수 금지: 파서가 '-' 로 토큰을 나눔)
-  //    · head 섹션은 값이 6개 이상이어야 한다
-  // =====================================================================
-  (function () {
-    var api = (window.UGULFacial = window.UGULFacial || {});
-    api.ready = false;
-    api.targetObject = null;
-    api.unityInstance = null;
-    api._pending = null;
-
-    api.send = function (payload) {
-      if (!api.ready || !api.unityInstance || !api.targetObject) {
-        api._pending = payload;   // 아직 준비 전이면 최신 것 하나만 보관
-        return false;
-      }
-      try {
-        api.unityInstance.SendMessage(api.targetObject, 'ReceiveFacialData', payload);
-        return true;
-      } catch (e) {
-        console.warn('[UGULFacial] SendMessage 실패', e);
-        return false;
-      }
-    };
-
-    api.notifyStopped = function () {
-      if (!api.ready || !api.unityInstance || !api.targetObject) return;
-      try {
-        api.unityInstance.SendMessage(api.targetObject, 'OnFacialSourceStopped', '');
-      } catch (e) { /* noop */ }
-    };
-
-    // jslib 이 등록 시점에 호출한다.
-    api._flush = function () {
-      if (api._pending) { api.send(api._pending); api._pending = null; }
-    };
-
-    // 부모 페이지(iframe 임베드)에서 데이터를 밀어넣는 경로.
-    window.addEventListener('message', function (ev) {
-      var d = ev.data;
-      if (!d || d.type !== 'ugul-facial') return;
-      if (typeof d.payload === 'string') api.send(d.payload);
-    });
-  })();
-  </script>
-
-  <script>
-  // ---------------------- Unity 로더 ----------------------
   (function () {
     var canvas = document.querySelector('#unity-canvas');
     var warningBanner = document.querySelector('#unity-warning');
@@ -250,316 +102,12 @@
       }).then(function (unityInstance) {
         document.querySelector('#unity-loading-bar').style.display = 'none';
         window.unityInstance = unityInstance;
-        window.UGULFacial.unityInstance = unityInstance;
-        window.UGULFacial._flush();
       }).catch(function (message) {
         unityShowBanner(message, 'error');
       });
     };
     document.body.appendChild(script);
   })();
-  </script>
-
-  <script type="module">
-  // =====================================================================
-  //  MediaPipe Face Landmarker → iFacialMocap 포맷 변환
-  //
-  //  MediaPipe 는 Apple ARKit 규격의 52개 블렌드셰이프를 그대로 내보낸다.
-  //  (eyeBlinkLeft, jawOpen, browInnerUp …) — iFacialMocap 과 이름이 같아
-  //  Unity 쪽 매핑을 손댈 필요가 없다.
-  // =====================================================================
-  // @mediapipe/tasks-vision 최신 안정판.
-  // 0.10.x 대에는 정식 배포 없이 rc 태그만 있어서 CDN 이 404 를 낸다.
-  const MP_VERSION = '1.0.1';
-  const MODEL_URL  =
-    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';
-
-  // 모바일(특히 아이폰)은 해상도와 전송률을 낮춰야 프레임이 유지된다.
-  const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  // 헤드 회전 부호. 캐릭터가 반대로 돌면 해당 값을 -1 로 바꾸면 된다.
-  // C# 쪽에서 이미 Y, Z 를 한 번 뒤집으므로 여기서 미리 상쇄해 둔다.
-  const HEAD_SIGN = { x: 1, y: -1, z: -1 };
-  const SEND_HZ = IS_MOBILE ? 20 : 30;
-
-  const els = {
-    panel:   document.getElementById('facial-panel'),
-    head:    document.getElementById('facial-head'),
-    toggle:  document.getElementById('facial-toggle'),
-    start:   document.getElementById('facial-start'),
-    stop:    document.getElementById('facial-stop'),
-    status:  document.getElementById('facial-status'),
-    preview: document.getElementById('facial-preview'),
-    wsUrl:   document.getElementById('facial-ws-url'),
-    wsBtn:   document.getElementById('facial-ws-connect'),
-    tabs:    Array.from(document.querySelectorAll('.facial-tab')),
-    paneCam: document.getElementById('pane-webcam'),
-    paneIph: document.getElementById('pane-iphone'),
-    bDot:    document.getElementById('bridge-dot'),
-    bText:   document.getElementById('bridge-text'),
-  };
-
-  function setStatus(text, kind) {
-    els.status.textContent = text;
-    els.status.className = kind || '';
-  }
-
-  els.head.addEventListener('click', () => {
-    const collapsed = els.panel.classList.toggle('collapsed');
-    els.toggle.textContent = collapsed ? '＋' : '－';
-  });
-
-  // ------------------------------------------------ 포맷 변환
-  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
-
-  function buildPayload(blendshapes, matrix) {
-    const parts = [];
-    for (const c of blendshapes) {
-      if (c.categoryName === '_neutral') continue;
-      // 0~1 → 0~100, 음수 금지(파서가 '-' 로 토큰을 자름)
-      const v = Math.round(clamp(c.score, 0, 1) * 100);
-      parts.push(c.categoryName + '-' + v);
-    }
-
-    let head = 'head#0,0,0,0,0,0';
-    if (matrix && matrix.length >= 16) {
-      const m = matrix;
-      // 열 우선(column-major) → 행 우선 성분
-      const r00 = m[0],  r10 = m[1],  r20 = m[2];
-      const r01 = m[4],  r11 = m[5],  r21 = m[6];
-      const r02 = m[8],  r12 = m[9],  r22 = m[10];
-
-      // Unity 오일러 순서(ZXY) 분해
-      const x = Math.asin(clamp(-r12, -1, 1));
-      let y, z;
-      if (Math.abs(r12) < 0.9999) {
-        y = Math.atan2(r02, r22);
-        z = Math.atan2(r10, r11);
-      } else {
-        y = Math.atan2(-r20, r00);
-        z = 0;
-      }
-      const D = 180 / Math.PI;
-      const rx = (x * D * HEAD_SIGN.x).toFixed(3);
-      const ry = (y * D * HEAD_SIGN.y).toFixed(3);
-      const rz = (z * D * HEAD_SIGN.z).toFixed(3);
-      head = `head#${rx},${ry},${rz},0,0,0`;
-    }
-
-    return parts.join('|') + '=' + head;
-  }
-
-  // ------------------------------------------------ 웹캠 트래킹
-  let landmarker = null;
-  let stream = null;
-  let rafId = null;
-  let lastVideoTime = -1;
-  let lastSent = 0;
-
-  async function ensureLandmarker() {
-    if (landmarker) return landmarker;
-
-    const base = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}`;
-
-    setStatus('트래킹 모듈을 불러오는 중…');
-    let mod;
-    try {
-      mod = await import(`${base}/vision_bundle.mjs`);
-    } catch (e) {
-      throw new Error(
-        '트래킹 모듈을 내려받지 못했습니다. 네트워크 또는 광고 차단 확장 프로그램이 ' +
-        'cdn.jsdelivr.net 을 막고 있는지 확인해주세요.'
-      );
-    }
-
-    const { FaceLandmarker, FilesetResolver } = mod;
-    if (!FaceLandmarker || !FilesetResolver) {
-      throw new Error('트래킹 모듈 형식이 예상과 다릅니다. MP_VERSION 을 확인해주세요.');
-    }
-
-    setStatus('트래킹 모델을 준비하는 중… (최초 1회, 약 4MB)');
-    const fileset = await FilesetResolver.forVisionTasks(`${base}/wasm`);
-
-    // iOS 사파리 등 일부 환경은 GPU 델리게이트 생성에 실패한다. CPU 로 물러선다.
-    const opts = (delegate) => ({
-      baseOptions: { modelAssetPath: MODEL_URL, delegate },
-      outputFaceBlendshapes: true,
-      outputFacialTransformationMatrixes: true,
-      runningMode: 'VIDEO',
-      numFaces: 1,
-    });
-
-    try {
-      landmarker = await FaceLandmarker.createFromOptions(fileset, opts('GPU'));
-    } catch (e) {
-      console.warn('[UGULFacial] GPU 델리게이트 실패, CPU 로 재시도합니다.', e);
-      landmarker = await FaceLandmarker.createFromOptions(fileset, opts('CPU'));
-    }
-    return landmarker;
-  }
-
-  function loop() {
-    rafId = requestAnimationFrame(loop);
-    const video = els.preview;
-    if (!landmarker || video.readyState < 2) return;
-    if (video.currentTime === lastVideoTime) return;
-    lastVideoTime = video.currentTime;
-
-    const now = performance.now();
-    if (now - lastSent < 1000 / SEND_HZ) return;
-    lastSent = now;
-
-    let res;
-    try {
-      res = landmarker.detectForVideo(video, now);
-    } catch (e) {
-      return;
-    }
-    if (!res || !res.faceBlendshapes || !res.faceBlendshapes.length) return;
-
-    const shapes = res.faceBlendshapes[0].categories;
-    const mtx = res.facialTransformationMatrixes && res.facialTransformationMatrixes.length
-      ? res.facialTransformationMatrixes[0].data : null;
-
-    window.UGULFacial.send(buildPayload(shapes, mtx));
-  }
-
-  async function startCamera() {
-    els.start.disabled = true;
-    try {
-      if (!window.isSecureContext) {
-        throw new Error('보안 연결(HTTPS)에서만 카메라를 쓸 수 있습니다.');
-      }
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('이 브라우저는 카메라 API를 지원하지 않습니다.');
-      }
-
-      await ensureLandmarker();
-
-      setStatus('카메라 권한을 요청하는 중…');
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: IS_MOBILE
-          ? { width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 24 }, facingMode: 'user' }
-          : { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-        audio: false,
-      });
-      els.preview.srcObject = stream;
-      els.preview.style.display = 'block';
-      await els.preview.play();
-
-      els.stop.disabled = false;
-      setStatus('트래킹 중입니다. 얼굴이 잘 보이도록 조명을 밝게 해주세요.', 'ok');
-      loop();
-    } catch (err) {
-      els.start.disabled = false;
-      let msg = err && err.message ? err.message : String(err);
-      if (err && err.name === 'NotAllowedError') {
-        msg = '카메라 사용이 거부되었습니다. 주소창의 카메라 아이콘에서 허용해주세요.';
-      } else if (err && err.name === 'NotFoundError') {
-        msg = '사용 가능한 카메라를 찾지 못했습니다.';
-      }
-      setStatus(msg, 'err');
-      console.error('[UGULFacial]', err);
-    }
-  }
-
-  function stopCamera() {
-    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-    els.preview.srcObject = null;
-    els.preview.style.display = 'none';
-    els.start.disabled = false;
-    els.stop.disabled = true;
-    lastVideoTime = -1;
-    window.UGULFacial.notifyStopped();
-    setStatus('중지했습니다.');
-  }
-
-  els.start.addEventListener('click', startCamera);
-  els.stop.addEventListener('click', stopCamera);
-
-  // ------------------------------------------------ 탭 전환
-  function selectMode(mode) {
-    els.tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
-    els.paneCam.hidden = (mode !== 'webcam');
-    els.paneIph.hidden = (mode !== 'iphone');
-  }
-  els.tabs.forEach(t => t.addEventListener('click', () => selectMode(t.dataset.mode)));
-
-  // ------------------------------------------------ 아이폰 브릿지 (iFacialMocap)
-  //
-  //  [아이폰 iFacialMocap] --UDP 49983--> [PC 브릿지] --WebSocket--> [이 페이지]
-  //
-  //  페이지가 HTTPS 여도 ws://127.0.0.1 은 브라우저가 허용한다.
-  //  루프백은 "신뢰할 수 있는 출처"라 혼합 콘텐츠 차단에서 면제되기 때문.
-  let ws = null;
-  let wsWanted = false;      // 사용자가 연결을 원하는 상태인지
-  let retryTimer = null;
-
-  function setBridge(state, text) {
-    els.bDot.className = state;           // '' | 'on' | 'off'
-    els.bText.textContent = text;
-  }
-
-  function connectBridge(manual) {
-    if (ws) return;
-    const url = els.wsUrl.value.trim();
-    if (!url) return;
-    let sock;
-    try {
-      sock = new WebSocket(url);
-    } catch (e) {
-      if (manual) setStatus('주소 형식이 올바르지 않습니다.', 'err');
-      return;
-    }
-    ws = sock;
-
-    sock.onopen = () => {
-      wsWanted = true;
-      els.wsBtn.textContent = '연결 끊기';
-      setBridge('on', '브릿지에 연결됨 — 아이폰 데이터를 기다리는 중');
-      setStatus('아이폰 iFacialMocap 신호를 받고 있습니다.', 'ok');
-    };
-
-    let frames = 0;
-    sock.onmessage = (ev) => {
-      window.UGULFacial.send(ev.data);
-      if (++frames === 30) setBridge('on', '아이폰 트래킹 수신 중');
-    };
-
-    sock.onerror = () => { /* onclose 에서 함께 처리 */ };
-
-    sock.onclose = () => {
-      const wasOpen = (ws === sock && frames > 0);
-      ws = null;
-      els.wsBtn.textContent = '연결';
-      window.UGULFacial.notifyStopped();
-      if (manual || wasOpen) {
-        setBridge('off', '브릿지 연결이 끊겼습니다');
-        setStatus('브릿지에 연결하지 못했습니다. PC에서 브릿지 프로그램이 실행 중인지 확인하세요.', 'warn');
-      } else {
-        setBridge('', '브릿지가 실행되고 있지 않습니다');
-      }
-      if (wsWanted) {          // 한 번이라도 붙었으면 자동 재연결
-        clearTimeout(retryTimer);
-        retryTimer = setTimeout(() => connectBridge(false), 2000);
-      }
-    };
-  }
-
-  els.wsBtn.addEventListener('click', () => {
-    if (ws) { wsWanted = false; clearTimeout(retryTimer); ws.close(); return; }
-    connectBridge(true);
-  });
-
-  // 페이지가 뜨면 조용히 한 번 찔러본다. 브릿지가 켜져 있으면 바로 잡힌다.
-  setBridge('', '브릿지를 찾는 중…');
-  setTimeout(() => connectBridge(false), 600);
-
-  window.addEventListener('beforeunload', () => {
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    if (ws) ws.close();
-  });
   </script>
 </body>
 </html>
