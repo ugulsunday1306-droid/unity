@@ -71,6 +71,9 @@
       updateVisibility();
     }
 
+    // 1 = CSS 픽셀 그대로 렌더 (가장 가볍다). 1.5~2 로 올리면 선명하지만 무거워진다.
+    var MAX_DPR = 1;
+
     var buildUrl = 'Build';
     var config = {
       arguments: [],
@@ -78,6 +81,9 @@
       frameworkUrl: buildUrl + '/unity.framework.js.unityweb',
       codeUrl: buildUrl + '/unity.wasm.unityweb',
       streamingAssetsUrl: 'StreamingAssets',
+      // 고DPI 화면에서 렌더 해상도가 2~4배로 뛰는 것을 막는다.
+      // NiloToon 은 캐릭터 1명당 패스가 11개라 픽셀 수가 곧바로 부하가 된다.
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, MAX_DPR),
       companyName: "UGUL",
       productName: "Choyo_Web",
       productVersion: "1.0.6",
@@ -100,8 +106,29 @@
       createUnityInstance(canvas, config, function (progress) {
         document.querySelector('#unity-progress-bar-full').style.width = 100 * progress + '%';
       }).then(function (unityInstance) {
-        document.querySelector('#unity-loading-bar').style.display = 'none';
         window.unityInstance = unityInstance;
+
+        // createUnityInstance 가 끝나도 씬 로드와 셰이더 컴파일이 남아 있다.
+        // 여기서 바로 오버레이를 치우면 "로딩은 끝났는데 아무것도 없는" 시간이 생긴다.
+        document.querySelector('#unity-progress-bar-full').style.width = '100%';
+        document.querySelector('#unity-loading-text').textContent = '장면을 준비하는 중…';
+
+        // 프레임이 안정적으로 돌기 시작하면 그때 오버레이를 치운다.
+        var stable = 0, last = performance.now();
+        (function waitFirstFrames() {
+          var now = performance.now();
+          var dt = now - last; last = now;
+          stable = (dt < 50) ? stable + 1 : 0;   // 정상 프레임 8연속이면 준비 완료
+          if (stable >= 8) {
+            document.querySelector('#unity-loading-bar').style.display = 'none';
+            return;
+          }
+          requestAnimationFrame(waitFirstFrames);
+        })();
+
+        setTimeout(function () {               // 안전장치
+          document.querySelector('#unity-loading-bar').style.display = 'none';
+        }, 15000);
       }).catch(function (message) {
         unityShowBanner(message, 'error');
       });
