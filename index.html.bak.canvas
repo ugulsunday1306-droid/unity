@@ -25,12 +25,8 @@
       width: 240px; height: 6px; border-radius: 3px;
       background: rgba(255,255,255,0.12); overflow: hidden;
     }
-    /* width 대신 transform 을 쓴다. width 변경은 레이아웃 재계산을 유발하고,
-       Unity 가 매 프레임 호출하는 GetCanvasClientSize 가 그 비용을 뒤집어쓴다. */
     #unity-progress-bar-full {
-      width: 100%; height: 100%; background: #6c8cff;
-      transform: scaleX(0); transform-origin: left center;
-      will-change: transform;
+      width: 0%; height: 100%; background: #6c8cff; transition: width .15s;
     }
 
     #unity-warning {
@@ -129,20 +125,38 @@
     script.onload = function () {
       var marked90 = false;
       createUnityInstance(canvas, config, function (progress) {
-        document.querySelector('#unity-progress-bar-full').style.transform = 'scaleX(' + progress + ')';
+        document.querySelector('#unity-progress-bar-full').style.width = 100 * progress + '%';
         if (!marked90 && progress >= 0.9) { marked90 = true; mark('다운로드 90%'); }
       }).then(function (unityInstance) {
         window.unityInstance = unityInstance;
         mark('엔진 준비 완료 (다운로드 + wasm 컴파일 끝)');
 
-        // 오버레이를 즉시 걷는다.
-        //   예전에는 "빠른 프레임이 8번 연속" 나올 때까지 기다렸는데,
-        //   오버레이가 살아있는 동안 레이아웃 재계산이 계속 일어나 프레임이
-        //   느려지고, 그래서 조건이 영원히 만족되지 않는 고리가 생겼다.
-        //   DOM 에서 완전히 제거해야 레이아웃 계산 대상에서 빠진다.
-        var bar = document.querySelector('#unity-loading-bar');
-        if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
-        mark('화면 표시 시작');
+        // createUnityInstance 가 끝나도 씬 로드와 셰이더 컴파일이 남아 있다.
+        // 여기서 바로 오버레이를 치우면 "로딩은 끝났는데 아무것도 없는" 시간이 생긴다.
+        document.querySelector('#unity-progress-bar-full').style.width = '100%';
+        document.querySelector('#unity-loading-text').textContent = '장면을 준비하는 중…';
+
+        // 프레임이 안정적으로 돌기 시작하면 그때 오버레이를 치운다.
+        var stable = 0, last = performance.now();
+        (function waitFirstFrames() {
+          var now = performance.now();
+          var dt = now - last; last = now;
+          stable = (dt < 50) ? stable + 1 : 0;   // 정상 프레임 8연속이면 준비 완료
+          if (stable >= 8) {
+            document.querySelector('#unity-loading-bar').style.display = 'none';
+            mark('화면 표시 시작 (프레임 안정)');
+            return;
+          }
+          requestAnimationFrame(waitFirstFrames);
+        })();
+
+        setTimeout(function () {               // 안전장치
+          var bar = document.querySelector('#unity-loading-bar');
+          if (bar.style.display !== 'none') {
+            bar.style.display = 'none';
+            mark('타임아웃으로 오버레이 해제 (아직 프레임이 불안정)');
+          }
+        }, 15000);
       }).catch(function (message) {
         unityShowBanner(message, 'error');
       });
