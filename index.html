@@ -74,12 +74,24 @@
     // 1 = CSS 픽셀 그대로 렌더 (가장 가볍다). 1.5~2 로 올리면 선명하지만 무거워진다.
     var MAX_DPR = 1;
 
-    var buildUrl = 'Build';
+    // ------------------------------------------------------------------
+    //  Build 파일을 어디서 받을지
+    //
+    //  ''            → 이 페이지와 같은 폴더의 Build/  (GitHub Pages 기본)
+    //  R2 공개 URL   → 'https://pub-xxxxxxxx.r2.dev'
+    //
+    //  R2 를 쓰는 이유: GitHub Pages 는 Content-Encoding 헤더를 설정할 수 없어
+    //  브라우저 대신 자바스크립트가 압축을 풀어야 하고, wasm 스트리밍 컴파일도
+    //  막힌다. R2 는 객체마다 헤더를 지정할 수 있어 둘 다 해결된다.
+    // ------------------------------------------------------------------
+    var BUILD_BASE = 'https://pub-d5966e9be35d4b55b7340cc3ea764d6f.r2.dev';
+
+    var buildUrl = BUILD_BASE ? (BUILD_BASE.replace(/\/$/, '') + '/Build') : 'Build';
     var config = {
       arguments: [],
-      dataUrl: buildUrl + '/unity.data.unityweb',
-      frameworkUrl: buildUrl + '/unity.framework.js.unityweb',
-      codeUrl: buildUrl + '/unity.wasm.unityweb',
+      dataUrl: buildUrl + '/unity.data.br',
+      frameworkUrl: buildUrl + '/unity.framework.js.br',
+      codeUrl: buildUrl + '/unity.wasm.br',
       streamingAssetsUrl: 'StreamingAssets',
       // 고DPI 화면에서 렌더 해상도가 2~4배로 뛰는 것을 막는다.
       // NiloToon 은 캐릭터 1명당 패스가 11개라 픽셀 수가 곧바로 부하가 된다.
