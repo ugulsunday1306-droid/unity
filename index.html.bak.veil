@@ -40,31 +40,6 @@
     #unity-warning div {
       padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; font-size: 13px;
     }
-
-    /* ── 부팅 베일 ────────────────────────────────────────────────
-       엔진 준비 후에도 첫 프레임까지 셰이더 컴파일로 메인 스레드가
-       수 초간 막힌다. 그동안 흰 화면이 얼어 보이지 않도록 덮어둔다.
-       스피너는 transform 키프레임만 쓴다 → 컴포지터 스레드에서 돌기
-       때문에 메인 스레드가 막혀 있어도 계속 회전한다.
-       position:fixed 라 캔버스 레이아웃에 영향을 주지 않는다.        */
-    #boot-veil {
-      position: fixed; inset: 0; z-index: 50;
-      background: #101014;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      transition: opacity .45s ease;
-      will-change: opacity;
-    }
-    #boot-veil.hide { opacity: 0; pointer-events: none; }
-    #boot-spinner {
-      width: 40px; height: 40px; border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.13);
-      border-top-color: #6c8cff;
-      animation: boot-spin 0.9s linear infinite;
-      will-change: transform;
-    }
-    @keyframes boot-spin { to { transform: rotate(360deg); } }
-    #boot-text { margin-top: 15px; font-size: 13px; color: #8a8a96; }
   </style>
 </head>
 <body>
@@ -78,12 +53,6 @@
   </div>
 
   <div id="unity-warning"></div>
-
-  <div id="boot-veil">
-    <div id="boot-spinner"></div>
-    <div id="boot-text">캐릭터를 준비하는 중…</div>
-  </div>
-
 
   <!-- ===== WebGL 병목 측정기 (임시) — 원인 파악 후 제거하세요 ===== -->
   <script>
@@ -235,19 +204,6 @@
       console.log('%c[LOAD] ' + ((performance.now() - T0) / 1000).toFixed(2) + 's  ' + label,
                   'color:#6c8cff;font-weight:bold');
     }
-
-    // 베일은 '실제로 아바타가 보이는 시점'에만 걷는다.
-    var veilDown = false;
-    function dropVeil(why) {
-      if (veilDown) return;
-      veilDown = true;
-      var v = document.querySelector('#boot-veil');
-      if (!v) return;
-      v.classList.add('hide');
-      setTimeout(function () { if (v.parentNode) v.parentNode.removeChild(v); }, 600);
-      mark('베일 해제 (' + why + ')');
-    }
-
     mark('시작');
 
     // 프레임이 언제부터 정상 속도로 도는지 기록만 한다.
@@ -265,7 +221,6 @@
         if (!done && fast >= 8) {
           done = true;
           mark('프레임 정상화 — 여기서 아바타가 보입니다');
-          dropVeil('첫 프레임 렌더 완료');
           return;
         }
         if (elapsed > nextReport) {
@@ -299,9 +254,7 @@
         if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
         mark('오버레이 제거 (아직 화면에 안 나왔을 수 있음)');
         startFrameMonitor();
-        setTimeout(function () { dropVeil('안전 타임아웃 40초'); }, 40000);
       }).catch(function (message) {
-        dropVeil('로딩 실패');
         unityShowBanner(message, 'error');
       });
     };
