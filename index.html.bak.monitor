@@ -122,32 +122,6 @@
     }
     mark('시작');
 
-    // 프레임이 언제부터 정상 속도로 도는지 기록만 한다.
-    // (오버레이 제어와 분리해야 서로 물리는 고리가 안 생긴다)
-    function startFrameMonitor() {
-      var t0 = performance.now(), last = t0, fast = 0, nextReport = 2000;
-      var sum = 0, count = 0, done = false;
-      function tick() {
-        var now = performance.now();
-        var dt = now - last; last = now;
-        sum += dt; count++;
-        fast = (dt < 50) ? fast + 1 : 0;
-
-        var elapsed = now - t0;
-        if (!done && fast >= 8) {
-          done = true;
-          mark('프레임 정상화 — 여기서 아바타가 보입니다');
-          return;
-        }
-        if (elapsed > nextReport) {
-          mark('아직 느림 · 평균 프레임 ' + Math.round(sum / count) + 'ms (최근 ' + count + '프레임)');
-          nextReport = elapsed + 3000; sum = 0; count = 0;
-        }
-        if (elapsed < 180000) requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    }
-
     document.querySelector('#unity-loading-bar').style.display = 'block';
 
     var script = document.createElement('script');
@@ -168,8 +142,7 @@
         //   DOM 에서 완전히 제거해야 레이아웃 계산 대상에서 빠진다.
         var bar = document.querySelector('#unity-loading-bar');
         if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
-        mark('오버레이 제거 (아직 화면에 안 나왔을 수 있음)');
-        startFrameMonitor();
+        mark('화면 표시 시작');
       }).catch(function (message) {
         unityShowBanner(message, 'error');
       });
