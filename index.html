@@ -114,7 +114,8 @@
       document.getElementsByTagName('head')[0].appendChild(meta);
     }
 
-    // 로딩 각 단계에 걸린 시간을 콘솔에 찍는다.
+    // 로딩 각 단계에 걸린 시간을 콘솔에 찍는다. 매번 프로파일러를 켜지 않아도
+    // "실제로 몇 초 걸렸는지"를 바로 확인할 수 있다.
     var T0 = performance.now();
     function mark(label) {
       console.log('%c[LOAD] ' + ((performance.now() - T0) / 1000).toFixed(2) + 's  ' + label,
