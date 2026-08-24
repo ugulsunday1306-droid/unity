@@ -102,6 +102,40 @@
     window.UGULGLStop = function () { clearInterval(timer); report('최종'); };
   })();
   </script>
+  <!-- ===== WASM 힙 증가 측정 ===== -->
+  <script>
+  (function () {
+    var T0 = performance.now();
+    var grows = [];
+    if (window.WebAssembly && WebAssembly.Memory && WebAssembly.Memory.prototype.grow) {
+      var orig = WebAssembly.Memory.prototype.grow;
+      WebAssembly.Memory.prototype.grow = function (pages) {
+        var beforeMB = this.buffer.byteLength / 1048576;
+        var t = performance.now();
+        var r = orig.apply(this, arguments);
+        var ms = performance.now() - t;
+        var afterMB = this.buffer.byteLength / 1048576;
+        grows.push({ ms: ms, from: beforeMB, to: afterMB });
+        console.log("%c[MEM] 힙 증가 " + beforeMB.toFixed(0) + "MB → " + afterMB.toFixed(0)
+                    + "MB   걸린시간 " + (ms / 1000).toFixed(2) + "초"
+                    + "   (페이지 시작 후 " + ((performance.now() - T0) / 1000).toFixed(1) + "초)",
+                    "color:#ff4d4f;font-weight:bold;font-size:13px");
+        return r;
+      };
+    }
+    window.UGULMemReport = function () {
+      var total = grows.reduce(function (s, g) { return s + g.ms; }, 0);
+      console.log("%c[MEM] 힙 증가 " + grows.length + "회, 누적 " + (total / 1000).toFixed(1) + "초",
+                  "color:#ff4d4f;font-weight:bold;font-size:14px");
+      if (grows.length) console.table(grows.map(function (g) {
+        return { "이전(MB)": Math.round(g.from), "이후(MB)": Math.round(g.to),
+                 "걸린시간(초)": +(g.ms / 1000).toFixed(2) };
+      }));
+    };
+    setInterval(window.UGULMemReport, 10000);
+  })();
+  </script>
+
   <!-- ===== 측정기 끝 ===== -->
   <script>
   (function () {
