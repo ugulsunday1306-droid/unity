@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
-  <title>Choyo_Web</title>
+  <title>{{{ PRODUCT_NAME }}}</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; height: 100%; background: #101014; overflow: hidden; }
@@ -54,55 +54,6 @@
 
   <div id="unity-warning"></div>
 
-  <!-- ===== WebGL 병목 측정기 (임시) — 원인 파악 후 제거하세요 ===== -->
-  <script>
-  (function () {
-    var stats = {}, T0 = performance.now();
-    function bump(n, ms) {
-      var s = stats[n] || (stats[n] = { n: 0, ms: 0, max: 0 });
-      s.n++; s.ms += ms; if (ms > s.max) s.max = ms;
-    }
-    function wrap(proto, name) {
-      if (!proto) return;
-      if (!Object.prototype.hasOwnProperty.call(proto, name)) return;
-      var orig = proto[name];
-      if (typeof orig !== 'function') return;
-      proto[name] = function () {
-        var t = performance.now();
-        var r = orig.apply(this, arguments);
-        bump(name, performance.now() - t);
-        return r;
-      };
-    }
-    ['compileShader','linkProgram','getShaderParameter','getProgramParameter',
-     'getShaderInfoLog','getProgramInfoLog','useProgram',
-     'texImage2D','texSubImage2D','compressedTexImage2D','compressedTexSubImage2D',
-     'texStorage2D','generateMipmap','bufferData','bufferSubData',
-     'readPixels','finish','flush','drawArrays','drawElements'].forEach(function (n) {
-      if (window.WebGL2RenderingContext) wrap(WebGL2RenderingContext.prototype, n);
-      if (window.WebGLRenderingContext)  wrap(WebGLRenderingContext.prototype, n);
-    });
-    function report(label) {
-      var rows = Object.keys(stats).map(function (k) {
-        return { '호출': k, '횟수': stats[k].n,
-                 '누적(초)': +(stats[k].ms / 1000).toFixed(2),
-                 '최대1회(ms)': Math.round(stats[k].max) };
-      }).filter(function (r) { return r['누적(초)'] >= 0.05; })
-        .sort(function (a, b) { return b['누적(초)'] - a['누적(초)']; });
-      var total = rows.reduce(function (s, r) { return s + r['누적(초)']; }, 0);
-      var since = ((performance.now() - T0) / 1000).toFixed(1);
-      console.log('%c[GL] ' + label + '  (시작 후 ' + since + '초)',
-                  'color:#ff9c6c;font-weight:bold;font-size:13px');
-      if (rows.length) console.table(rows);
-      console.log('%c[GL] GL 내부 합계 = ' + total.toFixed(1) + '초 / 경과 ' + since + '초',
-                  'color:#ff9c6c;font-weight:bold');
-    }
-    window.UGULGLReport = report;
-    var timer = setInterval(function () { report('주기'); }, 10000);
-    window.UGULGLStop = function () { clearInterval(timer); report('최종'); };
-  })();
-  </script>
-  <!-- ===== 측정기 끝 ===== -->
   <script>
   (function () {
     var canvas = document.querySelector('#unity-canvas');
@@ -142,16 +93,22 @@
     var buildUrl = BUILD_BASE ? (BUILD_BASE.replace(/\/$/, '') + '/Build') : 'Build';
     var config = {
       arguments: [],
-      dataUrl: buildUrl + '/unity.data.br',
-      frameworkUrl: buildUrl + '/unity.framework.js.br',
-      codeUrl: buildUrl + '/unity.wasm.br',
+      dataUrl: buildUrl + '/{{{ DATA_FILENAME }}}',
+      frameworkUrl: buildUrl + '/{{{ FRAMEWORK_FILENAME }}}',
+      codeUrl: buildUrl + '/{{{ CODE_FILENAME }}}',
+#if MEMORY_FILENAME
+      memoryUrl: buildUrl + '/{{{ MEMORY_FILENAME }}}',
+#endif
+#if SYMBOLS_FILENAME
+      symbolsUrl: buildUrl + '/{{{ SYMBOLS_FILENAME }}}',
+#endif
       streamingAssetsUrl: 'StreamingAssets',
       // 고DPI 화면에서 렌더 해상도가 2~4배로 뛰는 것을 막는다.
       // NiloToon 은 캐릭터 1명당 패스가 11개라 픽셀 수가 곧바로 부하가 된다.
       devicePixelRatio: Math.min(window.devicePixelRatio || 1, MAX_DPR),
-      companyName: "UGUL",
-      productName: "Choyo_Web",
-      productVersion: "1.0.6",
+      companyName: "{{{ COMPANY_NAME }}}",
+      productName: "{{{ PRODUCT_NAME }}}",
+      productVersion: "{{{ PRODUCT_VERSION }}}",
       showBanner: unityShowBanner,
       autoSyncPersistentDataPath: true
     };
@@ -201,7 +158,7 @@
     document.querySelector('#unity-loading-bar').style.display = 'block';
 
     var script = document.createElement('script');
-    script.src = buildUrl + '/unity.loader.js';
+    script.src = buildUrl + '/{{{ LOADER_FILENAME }}}';
     script.onload = function () {
       var marked90 = false;
       createUnityInstance(canvas, config, function (progress) {
