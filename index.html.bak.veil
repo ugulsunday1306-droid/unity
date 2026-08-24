@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
-  <title>Choyo_Web</title>
+  <title>{{{ PRODUCT_NAME }}}</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; height: 100%; background: #101014; overflow: hidden; }
@@ -176,16 +176,22 @@
     var buildUrl = BUILD_BASE ? (BUILD_BASE.replace(/\/$/, '') + '/Build') : 'Build';
     var config = {
       arguments: [],
-      dataUrl: buildUrl + '/unity.data.br',
-      frameworkUrl: buildUrl + '/unity.framework.js.br',
-      codeUrl: buildUrl + '/unity.wasm.br',
+      dataUrl: buildUrl + '/{{{ DATA_FILENAME }}}',
+      frameworkUrl: buildUrl + '/{{{ FRAMEWORK_FILENAME }}}',
+      codeUrl: buildUrl + '/{{{ CODE_FILENAME }}}',
+#if MEMORY_FILENAME
+      memoryUrl: buildUrl + '/{{{ MEMORY_FILENAME }}}',
+#endif
+#if SYMBOLS_FILENAME
+      symbolsUrl: buildUrl + '/{{{ SYMBOLS_FILENAME }}}',
+#endif
       streamingAssetsUrl: 'StreamingAssets',
       // 고DPI 화면에서 렌더 해상도가 2~4배로 뛰는 것을 막는다.
       // NiloToon 은 캐릭터 1명당 패스가 11개라 픽셀 수가 곧바로 부하가 된다.
       devicePixelRatio: Math.min(window.devicePixelRatio || 1, MAX_DPR),
-      companyName: "UGUL",
-      productName: "Choyo_Web",
-      productVersion: "1.0.6",
+      companyName: "{{{ COMPANY_NAME }}}",
+      productName: "{{{ PRODUCT_NAME }}}",
+      productVersion: "{{{ PRODUCT_VERSION }}}",
       showBanner: unityShowBanner,
       autoSyncPersistentDataPath: true
     };
@@ -235,7 +241,7 @@
     document.querySelector('#unity-loading-bar').style.display = 'block';
 
     var script = document.createElement('script');
-    script.src = buildUrl + '/unity.loader.js';
+    script.src = buildUrl + '/{{{ LOADER_FILENAME }}}';
     script.onload = function () {
       var marked90 = false;
       createUnityInstance(canvas, config, function (progress) {
